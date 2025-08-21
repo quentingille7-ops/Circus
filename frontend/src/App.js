@@ -151,7 +151,8 @@ function App() {
         });
       }
 
-      fetchActs(currentShow.id);
+      // Fix: Ensure acts are refreshed after creation/update
+      await fetchActs(currentShow.id);
       setActForm({
         name: '',
         performers: '',
