@@ -33,10 +33,8 @@ def prepare_for_mongo(data):
     return data
 
 def parse_from_mongo(item):
-    if isinstance(item.get('date'), str):
-        item['date'] = datetime.fromisoformat(item['date']).date()
-    if isinstance(item.get('time'), str):
-        item['time'] = datetime.strptime(item['time'], '%H:%M:%S').time()
+    # Keep dates as strings since Pydantic models expect string dates
+    # Only convert if we need time objects (which we don't currently use)
     return item
 
 # Define Models
