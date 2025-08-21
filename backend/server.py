@@ -177,6 +177,15 @@ async def get_acts_by_show(show_id: str):
     acts = await db.circus_acts.find({"show_id": show_id}).sort("sequence_order", 1).to_list(1000)
     return [CircusAct(**parse_from_mongo(act)) for act in acts]
 
+@api_router.put("/acts/reorder")
+async def reorder_acts(reorder_data: ActReorderRequest):
+    for act_update in reorder_data.act_updates:
+        await db.circus_acts.update_one(
+            {"id": act_update["id"]}, 
+            {"$set": {"sequence_order": act_update["sequence_order"]}}
+        )
+    return {"message": "Acts reordered successfully"}
+
 @api_router.get("/acts/{act_id}", response_model=CircusAct)
 async def get_act(act_id: str):
     act = await db.circus_acts.find_one({"id": act_id})
@@ -207,15 +216,6 @@ async def delete_act(act_id: str):
     await db.expenses.delete_many({"act_id": act_id})
     
     return {"message": "Act deleted successfully"}
-
-@api_router.put("/acts/reorder")
-async def reorder_acts(reorder_data: ActReorderRequest):
-    for act_update in reorder_data.act_updates:
-        await db.circus_acts.update_one(
-            {"id": act_update["id"]}, 
-            {"$set": {"sequence_order": act_update["sequence_order"]}}
-        )
-    return {"message": "Acts reordered successfully"}
 
 # Expense endpoints
 @api_router.post("/expenses", response_model=Expense)
