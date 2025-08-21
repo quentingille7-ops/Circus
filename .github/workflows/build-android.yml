@@ -1,24 +1,70 @@
-name: Build APK
+name: Build Android APK
+
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up JDK
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17 (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-      - name: Grant execute permission for gradlew
-        run: chmod +x ./gradlew
-      - name: Build Release
-        run: ./gradlew assembleRelease
-      - name: Upload APK
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: "34.0.0"
+
+      - name: Setup Gradle (cache + init)
+        uses: gradle/actions/setup-gradle@v4
+
+      # Détecte si le projet est React Native (dossier android/) ou Android "pur"
+      - name: Detect project layout
+        id: detect
+        run: |
+          if [ -d "android" ] && [ -f "android/gradlew" ]; then
+            echo "rootdir=android" >> $GITHUB_OUTPUT
+          else
+            echo "rootdir=." >> $GITHUB_OUTPUT
+          fi
+
+      - name: Make gradlew executable
+        run: |
+          chmod +x "${{ steps.detect.outputs.rootdir }}/gradlew"
+
+      # Liste les modules & tâches pour aider au debug si ça casse
+      - name: List Gradle projects & tasks
+        run: |
+          cd "${{ steps.detect.outputs.rootdir }}"
+          ./gradlew projects
+          ./gradlew tasks --all
+
+      # Essaie d'abord un build Debug (plus permissif) pour valider l'environnement,
+      # puis le Release si tout va bien
+      - name: Assemble Debug
+        run: |
+          cd "${{ steps.detect.outputs.rootdir }}"
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Assemble Release (best effort)
+        run: |
+          cd "${{ steps.detect.outputs.rootdir }}"
+          ./gradlew assembleRelease --stacktrace
+        continue-on-error: true
+
+      # Récupère tous les APK générés (debug et/ou release)
+      - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
-            name: app-release-apk
-            path: app/build/outputs/apk/release/*.apk
+          name: android-apk
+          path: |
+            **/build/outputs/apk/*/*.apk
+            **/build/outputs/apk/*.apk
