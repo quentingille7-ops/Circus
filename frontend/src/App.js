@@ -663,7 +663,7 @@ function App() {
                           <SelectValue placeholder="Select act" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="none">None</SelectItem>
                           {acts.map((act) => (
                             <SelectItem key={act.id} value={act.id}>{act.name}</SelectItem>
                           ))}
