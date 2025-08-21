@@ -1,0 +1,47 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # Installe le SDK Android demandé et accepte les licences
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: "34.0.0"
+          ndk: ""
+          cmake: ""
+
+      # Optimise/calcule le cache Gradle (remplace l'ancien gradle-build-action)
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      # ⚠️ Si ton module n'est pas "app", remplace :app:assembleRelease
+      - name: Build Release APK
+        run: ./gradlew :app:assembleRelease --stacktrace
+
+      # Chemin générique pour retrouver l'APK, peu importe le module
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: '**/build/outputs/apk/release/*.apk'
