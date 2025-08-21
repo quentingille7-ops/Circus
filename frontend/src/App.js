@@ -183,11 +183,11 @@ function App() {
         ...expenseForm,
         show_id: currentShow.id,
         amount: parseFloat(expenseForm.amount),
-        act_id: expenseForm.act_id || null
+        act_id: expenseForm.act_id === 'none' ? null : expenseForm.act_id
       };
 
       await axios.post(`${API}/expenses`, expenseData);
-      fetchExpenses(currentShow.id);
+      await fetchExpenses(currentShow.id);
       setExpenseForm({
         category: '',
         amount: '',
